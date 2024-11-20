@@ -1,12 +1,13 @@
 package com.example.studysudoku2;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
+import android.util.DisplayMetrics;
 import android.widget.Button;
-import android.widget.TableLayout;
-import android.widget.TableRow;
+import android.widget.GridLayout;
 
-//import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -30,16 +31,40 @@ public class MainActivity extends AppCompatActivity {
 
             button = new Button(context);
             if (fixed) {
+                //이미 채워져 있는 셀
                 button.setText(String.valueOf(value));
                 button.setEnabled(false);
+
+                button.setBackgroundColor(Color.WHITE);
+                button.setTextColor(Color.rgb(78, 89, 104));
             }
+            else{
+                //채워야 하는 셀 설정
+                button.setTextColor(Color.rgb(27, 100, 218));
+                button.setBackgroundColor(Color.rgb(192, 217, 254));
+            }
+
+            button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (fixed){
+                        return;
+                    }
+                    value++;
+
+                    if (value > 9){
+                        value = 1;
+                    }
+                    button.setText(String.valueOf(value));
+                }
+            });
         }
     }
 
     //2차원 배열 생성
     Cell[][] table;
     String input;
-    TableLayout layout;
+    GridLayout layout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        //임의의 스도쿠 입력
         input = "3 8 ? 7 5 4 2 1 9 " +
                 "7 ? 4 5 1 2 6 9 3 " +
                 "2 1 6 3 9 8 7 5 4 " +
@@ -66,23 +92,33 @@ public class MainActivity extends AppCompatActivity {
 
         //9x9의 배열로 게임 보드 초기화
         table = new Cell[9][9];
-        layout = new TableLayout(this);
+        layout = new GridLayout(this);
+        layout.setColumnCount(9);
+        layout.setRowCount(9);
+
+        // 디스플레이 화면 크기 계산, 비율 조정
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        int screenWidth = metrics.widthPixels;
+        int cellSize = screenWidth / 9;
 
         for (int i = 0; i < 9; i++){
-            TableRow row = new TableRow(this);
-            for (int j = 0; j < 9; j++){
+            for (int j = 0; j < 9; j++) {
                 String s = split[i * 9 + j];
                 char c = s.charAt(0);
                 //c가 물음표면 0으로, 물음표가 아니라면 정수로 변환
                 table[i][j] = new Cell(c == '?' ? 0 : c - '0', this);
-                row.addView(table[i][j].button);
-            }
-            layout.addView(row);
-        }
-        //셀들이 화면에 모두 보이도록 조정
-        layout.setShrinkAllColumns(true);
-        layout.setStretchAllColumns(true);
 
+                //셀의 레이아웃 수치 설정
+                GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+                params.width = cellSize; //정사각형 크기로 설정
+                params.height = cellSize;
+                params.rowSpec = GridLayout.spec(i);
+                params.columnSpec = GridLayout.spec(j);
+
+                layout.addView(table[i][j].button, params);
+            }
+        }
+        //셀들이 화면에 모두 보이도록 설정
         setContentView(layout);
     }
 }
