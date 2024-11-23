@@ -7,6 +7,7 @@ import android.view.View;
 import android.util.DisplayMetrics;
 import android.widget.Button;
 import android.widget.GridLayout;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -56,8 +57,23 @@ public class MainActivity extends AppCompatActivity {
                         value = 1;
                     }
                     button.setText(String.valueOf(value));
+                    
+                    // 추가된 유효성 검사 부분
+                    if (!SudokuValidator.isValidMove(board, getRow(), getCol(), value)) {  // 유효성 검사 호출
+                        button.setBackgroundColor(Color.RED);  // 잘못된 값일 경우 빨간색 배경
+                    } else {
+                        button.setBackgroundColor(Color.rgb(192, 217, 254));  // 유효한 값일 경우 기본 색상
+                    }
                 }
             });
+        }
+        // 각 Cell의 행, 열을 구할 수 있는 메소드 추가
+        public int getRow() {
+            return ((GridLayout.LayoutParams) button.getLayoutParams()).rowSpec.getIndex();
+        }
+
+        public int getCol() {
+            return ((GridLayout.LayoutParams) button.getLayoutParams()).columnSpec.getIndex();
         }
     }
 
@@ -90,6 +106,9 @@ public class MainActivity extends AppCompatActivity {
 
         String[] split = input.split(" "); //공백
 
+        // 추가된 난이도에 맞는 퍼즐 생성 부분
+        board = SudokuGenerator.generatePuzzle(2); // 난이도 2로 퍼즐 생성 (여기서 난이도 2를 예시로 사용)
+
         //9x9의 배열로 게임 보드 초기화
         table = new Cell[9][9];
         layout = new GridLayout(this);
@@ -120,5 +139,9 @@ public class MainActivity extends AppCompatActivity {
         }
         //셀들이 화면에 모두 보이도록 설정
         setContentView(layout);
+
+        // 추가된 힌트 제공 부분
+        String hint = SudokuHelper.provideHint(board);  // 힌트 제공 메서드 호출
+        Toast.makeText(this, hint, Toast.LENGTH_SHORT).show();  // 힌트를 Toast로 표시
     }
 }
