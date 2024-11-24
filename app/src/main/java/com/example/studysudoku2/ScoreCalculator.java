@@ -1,16 +1,23 @@
 package com.example.studysudoku2;
 
 public class ScoreCalculator {
-    private static final int BASE_SCORE = 1000; // 기본 점수
-    private static final int TIME_PENALTY = 1; // 초당 감점
-    private static final int HINT_PENALTY = 50; // 힌트 사용 시 감점
 
-    public static int calculateScore(int elapsedTime, int hintsUsed) {
-        int timePenalty = elapsedTime * TIME_PENALTY;
-        int hintPenalty = hintsUsed * HINT_PENALTY;
-        int finalScore = BASE_SCORE - timePenalty - hintPenalty;
+    // 게임 종료 후 점수 계산
+    public int calculateScore(int elapsedTime, int hintUsed) {
+        // 기본 점수 1000점
+        int score = 1000;
 
-        // 점수는 최소 0으로 설정
-        return Math.max(finalScore, 0);
+        // 경과 시간에 따른 점수 차감 (경과 시간 1초마다 1점 차감)
+        score -= elapsedTime;
+
+        // 힌트 사용 횟수에 따른 추가 차감 (힌트 1번마다 20점 차감)
+        score -= hintUsed * 20;
+
+        // 점수는 최소 0점으로 제한
+        if (score < 0) {
+            score = 0;
+        }
+
+        return score;
     }
 }
