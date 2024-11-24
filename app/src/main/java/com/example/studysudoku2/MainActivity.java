@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.GridLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -114,21 +115,23 @@ public class MainActivity extends AppCompatActivity implements Timer.TimerListen
         timer = new Timer(this);
         timer.start();
 
-        // 게임 종료 시점에 점수 계산
+        // 게임 종료 버튼 처리
         Button endGameButton = findViewById(R.id.endGameButton); // 게임 종료 버튼
         endGameButton.setOnClickListener(v -> {
-            timer.stop();
-            int finalScore = ScoreCalculator.calculateScore(timer.getElapsedTime(), hintCount);
+            timer.stop();  // 타이머 멈추기
+            int finalScore = ScoreCalculator.calculateScore(timer.getElapsedTime(), hintCount); // 점수 계산
             Toast.makeText(MainActivity.this, "최종 점수: " + finalScore, Toast.LENGTH_LONG).show();
         });
-    }
 
-    @Override
-    public void onTick(String time) {
-        // 타이머 값이 바뀔 때마다 호출되어 화면에 표시
-        // 예를 들어 TextView에 타이머 표시
-        TextView timerTextView = findViewById(R.id.timerTextView);
-        timerTextView.setText(time);
+        // 타이머 표시
+        TextView timerTextView = findViewById(R.id.timerTextView); // 타이머 TextView
+        timer.setListener(new Timer.TimerListener() {
+            @Override
+            public void onTick(String time) {
+                // 타이머 값이 바뀔 때마다 호출되어 화면에 표시
+                timerTextView.setText(time);
+            }
+        });
     }
 
     // 힌트 사용
@@ -137,4 +140,12 @@ public class MainActivity extends AppCompatActivity implements Timer.TimerListen
         String hint = SudokuHelper.provideHint(board);
         Toast.makeText(this, hint, Toast.LENGTH_SHORT).show();
     }
+
+    @Override
+    public void onTick(String time) {
+        // 이 메서드는 타이머의 onTick을 구현하여 TextView에 표시하는 부분입니다.
+        TextView timerTextView = findViewById(R.id.timerTextView);
+        timerTextView.setText(time);
+    }
 }
+
