@@ -4,25 +4,21 @@ import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
-import android.util.DisplayMetrics;
 import android.widget.Button;
 import android.widget.GridLayout;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import android.os.Handler;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements Timer.TimerListener {
 
-    private class Cell{
+    private class Cell {
         private int value;
         private boolean fixed;
         private Button button;
 
         public Cell(int intvalue, Context context) {
-            //셀이 채워졌는지 확인
             value = intvalue;
             if (value != 0) {
                 fixed = true;
@@ -32,42 +28,32 @@ public class MainActivity extends AppCompatActivity {
 
             button = new Button(context);
             if (fixed) {
-                //이미 채워져 있는 셀
                 button.setText(String.valueOf(value));
                 button.setEnabled(false);
-
                 button.setBackgroundColor(Color.WHITE);
                 button.setTextColor(Color.rgb(78, 89, 104));
-            }
-            else{
-                //채워야 하는 셀 설정
+            } else {
                 button.setTextColor(Color.rgb(27, 100, 218));
                 button.setBackgroundColor(Color.rgb(192, 217, 254));
             }
 
-            button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (fixed){
-                        return;
-                    }
-                    value++;
-
-                    if (value > 9){
-                        value = 1;
-                    }
-                    button.setText(String.valueOf(value));
-                    
-                    // 추가된 유효성 검사 부분
-                    if (!SudokuValidator.isValidMove(board, getRow(), getCol(), value)) {  // 유효성 검사 호출
-                        button.setBackgroundColor(Color.RED);  // 잘못된 값일 경우 빨간색 배경
-                    } else {
-                        button.setBackgroundColor(Color.rgb(192, 217, 254));  // 유효한 값일 경우 기본 색상
-                    }
+            button.setOnClickListener(view -> {
+                if (fixed) {
+                    return;
+                }
+                value++;
+                if (value > 9) {
+                    value = 1;
+                }
+                button.setText(String.valueOf(value));
+                if (!SudokuValidator.isValidMove(board, getRow(), getCol(), value)) {
+                    button.setBackgroundColor(Color.RED);
+                } else {
+                    button.setBackgroundColor(Color.rgb(192, 217, 254));
                 }
             });
         }
-        // 각 Cell의 행, 열을 구할 수 있는 메소드 추가
+
         public int getRow() {
             return ((GridLayout.LayoutParams) button.getLayoutParams()).rowSpec.getIndex();
         }
@@ -77,23 +63,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //2차원 배열 생성
-    Cell[][] table;
-    String input;
-    GridLayout layout;
+    private Cell[][] table;
+    private String input;
+    private GridLayout layout;
+    private Timer timer; // 타이머 인스턴스
+    private int hintCount = 0; // 힌트 사용 횟수
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
 
-        //임의의 스도쿠 입력
         input = "3 8 ? 7 5 4 2 1 9 " +
                 "7 ? 4 5 1 2 6 9 3 " +
                 "2 1 6 3 9 8 7 5 4 " +
@@ -104,44 +84,57 @@ public class MainActivity extends AppCompatActivity {
                 "1 5 9 8 4 7 ? 6 2 " +
                 "4 2 7 6 3 1 8 9 5 ";
 
-        String[] split = input.split(" "); //공백
+        String[] split = input.split(" ");
+        board = SudokuGenerator.generatePuzzle(2); // 난이도 2로 퍼즐 생성
 
-        // 추가된 난이도에 맞는 퍼즐 생성 부분
-        board = SudokuGenerator.generatePuzzle(2); // 난이도 2로 퍼즐 생성 (여기서 난이도 2를 예시로 사용)
-
-        //9x9의 배열로 게임 보드 초기화
         table = new Cell[9][9];
         layout = new GridLayout(this);
         layout.setColumnCount(9);
         layout.setRowCount(9);
 
-        // 디스플레이 화면 크기 계산, 비율 조정
-        DisplayMetrics metrics = getResources().getDisplayMetrics();
-        int screenWidth = metrics.widthPixels;
-        int cellSize = screenWidth / 9;
-
-        for (int i = 0; i < 9; i++){
+        for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
                 String s = split[i * 9 + j];
                 char c = s.charAt(0);
-                //c가 물음표면 0으로, 물음표가 아니라면 정수로 변환
                 table[i][j] = new Cell(c == '?' ? 0 : c - '0', this);
 
-                //셀의 레이아웃 수치 설정
                 GridLayout.LayoutParams params = new GridLayout.LayoutParams();
-                params.width = cellSize; //정사각형 크기로 설정
-                params.height = cellSize;
+                params.width = 100;  // 셀 크기
+                params.height = 100;
                 params.rowSpec = GridLayout.spec(i);
                 params.columnSpec = GridLayout.spec(j);
 
                 layout.addView(table[i][j].button, params);
             }
         }
-        //셀들이 화면에 모두 보이도록 설정
+
         setContentView(layout);
 
-        // 추가된 힌트 제공 부분
-        String hint = SudokuHelper.provideHint(board);  // 힌트 제공 메서드 호출
-        Toast.makeText(this, hint, Toast.LENGTH_SHORT).show();  // 힌트를 Toast로 표시
+        // 타이머 시작
+        timer = new Timer(this);
+        timer.start();
+
+        // 게임 종료 시점에 점수 계산
+        Button endGameButton = findViewById(R.id.endGameButton); // 게임 종료 버튼
+        endGameButton.setOnClickListener(v -> {
+            timer.stop();
+            int finalScore = ScoreCalculator.calculateScore(timer.getElapsedTime(), hintCount);
+            Toast.makeText(MainActivity.this, "최종 점수: " + finalScore, Toast.LENGTH_LONG).show();
+        });
+    }
+
+    @Override
+    public void onTick(String time) {
+        // 타이머 값이 바뀔 때마다 호출되어 화면에 표시
+        // 예를 들어 TextView에 타이머 표시
+        TextView timerTextView = findViewById(R.id.timerTextView);
+        timerTextView.setText(time);
+    }
+
+    // 힌트 사용
+    public void onHintUsed() {
+        hintCount++; // 힌트 사용 횟수 증가
+        String hint = SudokuHelper.provideHint(board);
+        Toast.makeText(this, hint, Toast.LENGTH_SHORT).show();
     }
 }
