@@ -5,9 +5,12 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.util.DisplayMetrics;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.GridLayout;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toolbar;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,7 +22,7 @@ import java.lang.ref.Cleaner;
 
 public class MainActivity extends AppCompatActivity {
 
-    private class Cell{
+    private class Cell {
         private int value;
         private boolean fixed;
         private Button button;
@@ -41,8 +44,7 @@ public class MainActivity extends AppCompatActivity {
 
                 button.setBackgroundColor(Color.WHITE);
                 button.setTextColor(Color.rgb(78, 89, 104));
-            }
-            else{
+            } else {
                 //비어 있는 셀 설정
                 button.setText("");
                 button.setTextColor(Color.rgb(27, 100, 218));
@@ -50,90 +52,85 @@ public class MainActivity extends AppCompatActivity {
             }
 
             button.setOnClickListener(view -> {
-                if (fixed){
+                if (fixed) {
                     return;
                 }
                 selectedCell = this; //클릭한 셀 기억
             });
         }
 
-        public void setValue(int newValue){
+        public void setValue(int newValue) {
             value = newValue;
             button.setText(value == 0 ? "" : String.valueOf(value));
         }
     }
 
-    private Cell selectedCell = null;
-
-    //숫자 패드
-    private GridLayout createNumberPad(Context context){
-        //숫자 버튼 생성
-        GridLayout numberPad = new GridLayout(context);
-        numberPad.setColumnCount(3);
-        numberPad.setRowCount(4);
-
-        //디스플레이 크기 기준으로 버튼 크기 계산
-        DisplayMetrics metrics = getResources().getDisplayMetrics();
-        int buttonSize = metrics.widthPixels / 6;
-
-        for (int i = 1; i <= 9; i++){
-            final int number = i;
-
-            Button numberButton = new Button(context);
-
-            numberButton.setText(String.valueOf(number));
-            numberButton.setLayoutParams(new GridLayout.LayoutParams());
-            numberButton.setWidth(buttonSize);
-            numberButton.setHeight(buttonSize);
-
-            numberButton.setOnClickListener(v -> {
-                if (selectedCell != null){
-                    selectedCell.setValue(number);  //셀 선택 후 값 입력
-                }
-            });
-
-            numberPad.addView(numberButton);
-        }
-
-        //초기화 버튼
-        Button clearButton = new Button(context);
-
-        clearButton.setText("delete");
-        clearButton.setLayoutParams(new GridLayout.LayoutParams());
-        clearButton.setWidth(buttonSize);
-        clearButton.setHeight(buttonSize);
-
-        clearButton.setOnClickListener(v -> {
-            if (selectedCell != null){
-                selectedCell.setValue(0); //선택된 셀 초기화
-            }
-        });
-
-        numberPad.addView(clearButton);
-
-        return numberPad;
-    }
-
-    //2차원 배열 생성
-    Cell[][] table;
-    String input;
-    GridLayout boardLayout;
-    GridLayout numberPadLayout;
+    private Toolbar headerLayout; //헤더
+    private Cell selectedCell = null; //선택된 셀
+    private Cell[][] table; //게임 보드 2차원 배열
+    private String input; //스도쿠 입력
+    private GridLayout boardLayout; //게임 보드 레이아웃
+    private GridLayout numberPadLayout; //숫자 패드 레이아웃
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //EdgeToEdge.enable(this);
-        //setContentView(R.layout.activity_main);
-        //ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-        //    Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-        //    v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-        //    return insets;
-        //});
 
         //수직의 메인 레이아웃
         LinearLayout mainLayout = new LinearLayout(this);
         mainLayout.setOrientation(LinearLayout.VERTICAL);
+
+        //헤더 레이아웃
+        headerLayout = createHeader("Sudoku Game 1");
+        LinearLayout.LayoutParams headerParams
+                = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+        headerLayout.setLayoutParams(headerParams);
+
+        //게임 보드 레이아웃
+        boardLayout = createGameBoard();
+        LinearLayout.LayoutParams boardParams
+                = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0);
+        boardParams.weight = 1; //화면의 1/2
+        boardLayout.setLayoutParams(boardParams);
+
+        //숫자 패드 레이아웃
+        numberPadLayout = createNumberPad();
+        LinearLayout.LayoutParams padParams
+                = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0);
+        padParams.weight = 1; //화면의1/2
+        numberPadLayout.setLayoutParams(padParams);
+
+        //메인 레이아웃
+        mainLayout.addView(headerLayout);
+        mainLayout.addView(boardLayout);
+        mainLayout.addView(numberPadLayout);
+
+        setContentView(mainLayout);
+    }
+
+    //헤더 생성
+    private Toolbar createHeader(String title){
+        Toolbar toolbar = new Toolbar(this);
+        toolbar.setTitle(title);
+        toolbar.setTitleTextColor(Color.WHITE);
+        toolbar.setBackgroundColor(Color.rgb(49, 130, 246));
+
+        return toolbar;
+    }
+
+    //게임 보드 생성
+    private GridLayout createGameBoard() {
+        //9x9의 배열로 게임 보드 초기화
+        GridLayout gameBoard = new GridLayout(this);
+        gameBoard.setColumnCount(9);
+        gameBoard.setRowCount(9);
+
+        //디스플레이 화면 크기 계산, 비율 조정
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        int screenWidth = metrics.widthPixels;
+        int cellSize = screenWidth / 9;
 
         //임의의 스도쿠 입력
         input = "3 8 ? 7 5 4 2 1 9 " +
@@ -146,26 +143,17 @@ public class MainActivity extends AppCompatActivity {
                 "1 5 9 8 4 7 ? 6 2 " +
                 "4 2 7 6 3 1 8 9 5 ";
 
-        String[] split = input.split(" "); //공백
+        String[] split = input.split(" ");
 
-        //9x9의 배열로 게임 보드 초기화
         table = new Cell[9][9];
-        boardLayout = new GridLayout(this);
-        boardLayout.setColumnCount(9);
-        boardLayout.setRowCount(9);
-
-        // 디스플레이 화면 크기 계산, 비율 조정
-        DisplayMetrics metrics = getResources().getDisplayMetrics();
-        int screenWidth = metrics.widthPixels;
-        int cellSize = screenWidth / 9;
-
-        for (int i = 0; i < 9; i++){
+        for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
                 String s = split[i * 9 + j];
                 char c = s.charAt(0);
+
+                //셀 생성
                 //c가 물음표면 0으로, 물음표가 아니라면 정수로 변환
                 table[i][j] = new Cell(c == '?' ? 0 : c - '0', this);
-
                 //셀의 레이아웃 수치 설정
                 GridLayout.LayoutParams params = new GridLayout.LayoutParams();
                 params.width = cellSize; //정사각형 크기로 설정
@@ -173,15 +161,85 @@ public class MainActivity extends AppCompatActivity {
                 params.rowSpec = GridLayout.spec(i);
                 params.columnSpec = GridLayout.spec(j);
 
-                boardLayout.addView(table[i][j].button, params);
+                gameBoard.addView(table[i][j].button, params);
             }
         }
 
-        numberPadLayout = createNumberPad(this);
-        mainLayout.addView(boardLayout);
-        mainLayout.addView(numberPadLayout);
+        return gameBoard;
+    }
 
-        //셀들이 화면에 모두 보이도록 설정
-        setContentView(mainLayout);
+    //숫자 패드 생성
+    private GridLayout createNumberPad() {
+        GridLayout numberPad = new GridLayout(this);
+        numberPad.setColumnCount(4);
+        numberPad.setRowCount(3);
+
+        //디스플레이 크기 기준으로 버튼 크기 계산
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        int buttonSize = metrics.widthPixels / 4;
+
+        //숫자 버튼 생성
+        for (int i = 1; i <= 9; i++) {
+            final int number = i;
+
+            Button numberButton = new Button(this);
+            numberButton.setText(String.valueOf(number));
+
+            GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+            params.width = buttonSize;
+            params.height = buttonSize;
+
+            //숫자 위치 설정
+            params.rowSpec = GridLayout.spec((i - 1) / 3);
+            params.columnSpec = GridLayout.spec((i - 1) % 3);
+
+            numberButton.setLayoutParams(params);
+            numberButton.setOnClickListener(v -> {
+                if (selectedCell != null) {
+                    selectedCell.setValue(number);  //셀 선택 후 값 입력
+                }
+            });
+
+            numberPad.addView(numberButton);
+        }
+
+        //지우기 버튼
+        Button clearButton = new Button(this);
+        clearButton.setText("X");
+
+        GridLayout.LayoutParams deleteParams = new GridLayout.LayoutParams();
+        deleteParams.width = buttonSize;
+        deleteParams.height = buttonSize;
+
+        //지우기 버튼 위치 설정
+        deleteParams.rowSpec = GridLayout.spec(0);
+        deleteParams.columnSpec = GridLayout.spec(3);
+        clearButton.setLayoutParams(deleteParams);
+
+        clearButton.setOnClickListener(v -> {
+            if (selectedCell != null) {
+                selectedCell.setValue(0); //선택된 셀 초기화
+            }
+        });
+
+        numberPad.addView(clearButton);
+
+        //숫자패드의 빈 공간
+        for (int i = 0; i < 2; i++) {
+            View emptySpace = new View(this);
+
+            GridLayout.LayoutParams emptyParams = new GridLayout.LayoutParams();
+            emptyParams.width = buttonSize;
+            emptyParams.height = buttonSize;
+
+            //빈 공간 위치 설정
+            emptyParams.rowSpec = GridLayout.spec(2);
+            emptyParams.columnSpec = GridLayout.spec(2 + i);
+            emptySpace.setLayoutParams(emptyParams);
+
+            numberPad.addView(emptySpace);
+        }
+
+        return numberPad;
     }
 }
