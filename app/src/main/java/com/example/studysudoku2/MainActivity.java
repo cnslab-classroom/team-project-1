@@ -96,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
         layout.setColumnCount(9);
         layout.setRowCount(9);
 
-        // 디스플레이 화면 크기 계산, 비율 조정
+        //디스플레이 화면 크기 계산, 비율 조정
         DisplayMetrics metrics = getResources().getDisplayMetrics();
         int screenWidth = metrics.widthPixels;
         int cellSize = screenWidth / 9;
