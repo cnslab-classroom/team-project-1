@@ -2,6 +2,7 @@ package com.example.studysudoku2;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.View;
@@ -23,9 +24,9 @@ public class GameBoardView extends View{
 
     private void init(){
         linePaint = new Paint();
-        linePaint.setColor(0xFF000000); //선 색상
+        linePaint.setColor(Color.rgb(242,242,242)); //선 색상
         linePaint.setStyle(Paint.Style.STROKE);
-        linePaint.setStrokeWidth(2); //선 두께
+        linePaint.setStrokeWidth(4); //선 두께
     }
 
     @Override

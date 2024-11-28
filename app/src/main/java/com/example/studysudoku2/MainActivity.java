@@ -48,15 +48,23 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 //비어 있는 셀 설정
                 button.setText("");
+                button.setBackgroundColor(Color.WHITE);
                 button.setTextColor(Color.rgb(27, 100, 218));
-                button.setBackgroundColor(Color.rgb(192, 217, 254));
+                button.setStateListAnimator(null);
             }
 
             button.setOnClickListener(view -> {
                 if (fixed) {
                     return;
                 }
+
+                if (selectedCell != null && selectedCell != this) {
+                    selectedCell.button.setBackgroundColor(Color.WHITE);
+                }
+
                 selectedCell = this; //클릭한 셀 기억
+                button.setBackgroundColor(Color.rgb(192, 217, 254));
+
             });
         }
 
@@ -93,14 +101,14 @@ public class MainActivity extends AppCompatActivity {
         boardLayout = createGameBoard();
         LinearLayout.LayoutParams boardParams
                 = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0);
-        boardParams.weight = 1; //화면의 1/2
+        boardParams.weight = 9; //화면의 9/17
         boardLayout.setLayoutParams(boardParams);
 
         //숫자 패드 레이아웃
         numberPadLayout = createNumberPad();
         LinearLayout.LayoutParams padParams
                 = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0);
-        padParams.weight = 1; //화면의1/2
+        padParams.weight = 8; //화면의 8/17
         numberPadLayout.setLayoutParams(padParams);
 
         //메인 레이아웃
