@@ -219,6 +219,7 @@ public class MainActivity extends AppCompatActivity {
 
             Button numberButton = new Button(this);
             numberButton.setText(String.valueOf(number));
+            numberButton.setBackgroundColor(Color.rgb(252,252,252));
 
             GridLayout.LayoutParams params = new GridLayout.LayoutParams();
             params.width = buttonSize;
@@ -241,6 +242,7 @@ public class MainActivity extends AppCompatActivity {
         //지우기 버튼
         Button clearButton = new Button(this);
         clearButton.setText("X");
+        clearButton.setBackgroundColor(Color.rgb(252,252,252));
 
         GridLayout.LayoutParams deleteParams = new GridLayout.LayoutParams();
         deleteParams.width = buttonSize;
