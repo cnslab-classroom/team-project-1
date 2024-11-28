@@ -7,11 +7,12 @@ import android.view.View;
 import android.util.DisplayMetrics;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toolbar;
 
+import androidx.appcompat.widget.Toolbar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -69,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
     private Cell selectedCell = null; //선택된 셀
     private Cell[][] table; //게임 보드 2차원 배열
     private String input; //스도쿠 입력
-    private GridLayout boardLayout; //게임 보드 레이아웃
+    private FrameLayout boardLayout; //게임 보드 레이아웃
     private GridLayout numberPadLayout; //숫자 패드 레이아웃
 
     @Override
@@ -121,11 +122,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //게임 보드 생성
-    private GridLayout createGameBoard() {
+    private FrameLayout createGameBoard(){
+        //게임 보드 레이아웃
+        FrameLayout gameBoardLayout = new FrameLayout(this);
+        //gameBoardLayout.setOrientation(LinearLayout.VERTICAL);
+
+        //게임 보드 스트로크
+        GameBoardView gameBoardView = new GameBoardView(this);
+        FrameLayout.LayoutParams gameBoardViewParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT);
+        gameBoardView.setLayoutParams(gameBoardViewParams);
+
         //9x9의 배열로 게임 보드 초기화
-        GridLayout gameBoard = new GridLayout(this);
-        gameBoard.setColumnCount(9);
-        gameBoard.setRowCount(9);
+        GridLayout gridBoard = new GridLayout(this);
+        gridBoard.setColumnCount(9);
+        gridBoard.setRowCount(9);
 
         //디스플레이 화면 크기 계산, 비율 조정
         DisplayMetrics metrics = getResources().getDisplayMetrics();
@@ -154,6 +166,7 @@ public class MainActivity extends AppCompatActivity {
                 //셀 생성
                 //c가 물음표면 0으로, 물음표가 아니라면 정수로 변환
                 table[i][j] = new Cell(c == '?' ? 0 : c - '0', this);
+
                 //셀의 레이아웃 수치 설정
                 GridLayout.LayoutParams params = new GridLayout.LayoutParams();
                 params.width = cellSize; //정사각형 크기로 설정
@@ -161,11 +174,25 @@ public class MainActivity extends AppCompatActivity {
                 params.rowSpec = GridLayout.spec(i);
                 params.columnSpec = GridLayout.spec(j);
 
-                gameBoard.addView(table[i][j].button, params);
+                gridBoard.addView(table[i][j].button, params);
             }
         }
 
-        return gameBoard;
+        //GameBoardView의 크기를 GridLayout과 동일하게 설정
+        FrameLayout.LayoutParams gridBoardParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT);
+        gridBoard.setLayoutParams(gridBoardParams);
+
+        gridBoard.setBackgroundColor(Color.TRANSPARENT); // GridLayout 배경 설정
+
+        //게임 보드 레이아웃에 추가
+        gameBoardLayout.addView(gridBoard); // 실제 GridLayout 추가
+        gameBoardLayout.addView(gameBoardView); // 스트로크 그리기
+
+        gameBoardView.invalidate();
+
+        return gameBoardLayout;
     }
 
     //숫자 패드 생성
