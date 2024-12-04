@@ -3,50 +3,33 @@ package com.example.studysudoku2;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.view.View;
-import android.util.DisplayMetrics;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.FrameLayout;
+import android.os.CountDownTimer;
 import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.widget.Toolbar;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-
-import java.lang.ref.Cleaner;
 
 public class MainActivity extends AppCompatActivity {
 
     private class Cell {
         private int value;
         private boolean fixed;
-        private Button button;
+        private android.widget.Button button;
 
         public Cell(int intvalue, Context context) {
-            //셀이 채워졌는지 확인
             value = intvalue;
-            if (value != 0) {
-                fixed = true;
-            } else {
-                fixed = false;
-            }
+            fixed = value != 0;
 
-            button = new Button(context);
+            button = new android.widget.Button(context);
             if (fixed) {
-                //이미 채워져 있는 셀
                 button.setText(String.valueOf(value));
                 button.setEnabled(false);
-
                 button.setBackgroundColor(Color.WHITE);
                 button.setTextColor(Color.rgb(78, 89, 104));
             } else {
-                //비어 있는 셀 설정
                 button.setText("");
                 button.setBackgroundColor(Color.WHITE);
                 button.setTextColor(Color.rgb(27, 100, 218));
@@ -54,17 +37,12 @@ public class MainActivity extends AppCompatActivity {
             }
 
             button.setOnClickListener(view -> {
-                if (fixed) {
-                    return;
-                }
-
+                if (fixed) return;
                 if (selectedCell != null && selectedCell != this) {
                     selectedCell.button.setBackgroundColor(Color.WHITE);
                 }
-
-                selectedCell = this; //클릭한 셀 기억
+                selectedCell = this;
                 button.setBackgroundColor(Color.rgb(192, 217, 254));
-
             });
         }
 
@@ -74,85 +52,82 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private Toolbar headerLayout; //헤더
-    private Cell selectedCell = null; //선택된 셀
-    private Cell[][] table; //게임 보드 2차원 배열
-    private String input; //스도쿠 입력
-    private FrameLayout boardLayout; //게임 보드 레이아웃
-    private GridLayout numberPadLayout; //숫자 패드 레이아웃
+    private Toolbar headerLayout;
+    private Cell selectedCell = null;
+    private Cell[][] table;
+    private String input;
+    private TextView timerTextView;
+    private CountDownTimer countDownTimer;
+    private long timeElapsed = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        //수직의 메인 레이아웃
+        // Main Layout
         LinearLayout mainLayout = new LinearLayout(this);
         mainLayout.setOrientation(LinearLayout.VERTICAL);
 
-        //헤더 레이아웃
-        headerLayout = createHeader("Sudoku Game 1");
-        LinearLayout.LayoutParams headerParams
-                = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
+        // Header Layout
+        headerLayout = createHeader("Sudoku Game");
+        LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         headerLayout.setLayoutParams(headerParams);
 
-        //게임 보드 레이아웃
-        boardLayout = createGameBoard();
-        LinearLayout.LayoutParams boardParams
-                = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0);
-        boardParams.weight = 9; //화면의 9/17
+        // Game Board Layout
+        LinearLayout.LayoutParams boardParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0);
+        boardParams.weight = 9;
+        LinearLayout boardLayout = createGameBoard();
         boardLayout.setLayoutParams(boardParams);
 
-        //숫자 패드 레이아웃
-        numberPadLayout = createNumberPad();
-        LinearLayout.LayoutParams padParams
-                = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0);
-        padParams.weight = 8; //화면의 8/17
+        // Number Pad Layout
+        GridLayout numberPadLayout = createNumberPad();
+        LinearLayout.LayoutParams padParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0);
+        padParams.weight = 8;
         numberPadLayout.setLayoutParams(padParams);
 
-        //메인 레이아웃
+        // Timer TextView
+        timerTextView = new TextView(this);
+        timerTextView.setText("00:00");
+        timerTextView.setTextColor(Color.BLACK);
+        timerTextView.setTextSize(24);
+
+        LinearLayout.LayoutParams timerParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        timerTextView.setLayoutParams(timerParams);
+
+        // Add Views to Main Layout
         mainLayout.addView(headerLayout);
         mainLayout.addView(boardLayout);
         mainLayout.addView(numberPadLayout);
+        mainLayout.addView(timerTextView);
 
         setContentView(mainLayout);
+
+        // Start Timer
+        startTimer();
     }
 
-    //헤더 생성
-    private Toolbar createHeader(String title){
+    private Toolbar createHeader(String title) {
         Toolbar toolbar = new Toolbar(this);
         toolbar.setTitle(title);
         toolbar.setTitleTextColor(Color.WHITE);
         toolbar.setBackgroundColor(Color.rgb(49, 130, 246));
-
         return toolbar;
     }
 
-    //게임 보드 생성
-    private FrameLayout createGameBoard(){
-        //게임 보드 레이아웃
-        FrameLayout gameBoardLayout = new FrameLayout(this);
-        //gameBoardLayout.setOrientation(LinearLayout.VERTICAL);
+    private LinearLayout createGameBoard() {
+        LinearLayout gameBoardLayout = new LinearLayout(this);
 
-        //게임 보드 스트로크
-        GameBoardView gameBoardView = new GameBoardView(this);
-        FrameLayout.LayoutParams gameBoardViewParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT);
-        gameBoardView.setLayoutParams(gameBoardViewParams);
-
-        //9x9의 배열로 게임 보드 초기화
+        // Game Board Initialization
         GridLayout gridBoard = new GridLayout(this);
         gridBoard.setColumnCount(9);
         gridBoard.setRowCount(9);
 
-        //디스플레이 화면 크기 계산, 비율 조정
-        DisplayMetrics metrics = getResources().getDisplayMetrics();
-        int screenWidth = metrics.widthPixels;
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
         int cellSize = screenWidth / 9;
 
-        //임의의 스도쿠 입력
         input = "3 8 ? 7 5 4 2 1 9 " +
                 "7 ? 4 5 1 2 6 9 3 " +
                 "2 1 6 3 9 8 7 5 4 " +
@@ -164,20 +139,15 @@ public class MainActivity extends AppCompatActivity {
                 "4 2 7 6 3 1 8 9 5 ";
 
         String[] split = input.split(" ");
-
         table = new Cell[9][9];
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
                 String s = split[i * 9 + j];
                 char c = s.charAt(0);
 
-                //셀 생성
-                //c가 물음표면 0으로, 물음표가 아니라면 정수로 변환
                 table[i][j] = new Cell(c == '?' ? 0 : c - '0', this);
-
-                //셀의 레이아웃 수치 설정
                 GridLayout.LayoutParams params = new GridLayout.LayoutParams();
-                params.width = cellSize; //정사각형 크기로 설정
+                params.width = cellSize;
                 params.height = cellSize;
                 params.rowSpec = GridLayout.spec(i);
                 params.columnSpec = GridLayout.spec(j);
@@ -186,97 +156,84 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        //GameBoardView의 크기를 GridLayout과 동일하게 설정
-        FrameLayout.LayoutParams gridBoardParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT);
-        gridBoard.setLayoutParams(gridBoardParams);
-
-        gridBoard.setBackgroundColor(Color.TRANSPARENT); // GridLayout 배경 설정
-
-        //게임 보드 레이아웃에 추가
-        gameBoardLayout.addView(gridBoard); // 실제 GridLayout 추가
-        gameBoardLayout.addView(gameBoardView); // 스트로크 그리기
-
-        gameBoardView.invalidate();
-
+        gameBoardLayout.addView(gridBoard);
         return gameBoardLayout;
     }
 
-    //숫자 패드 생성
     private GridLayout createNumberPad() {
         GridLayout numberPad = new GridLayout(this);
         numberPad.setColumnCount(4);
         numberPad.setRowCount(3);
 
-        //디스플레이 크기 기준으로 버튼 크기 계산
-        DisplayMetrics metrics = getResources().getDisplayMetrics();
-        int buttonSize = metrics.widthPixels / 4;
+        int buttonSize = getResources().getDisplayMetrics().widthPixels / 4;
 
-        //숫자 버튼 생성
         for (int i = 1; i <= 9; i++) {
             final int number = i;
-
-            Button numberButton = new Button(this);
+            android.widget.Button numberButton = new android.widget.Button(this);
             numberButton.setText(String.valueOf(number));
-            numberButton.setBackgroundColor(Color.rgb(252,252,252));
+            numberButton.setBackgroundColor(Color.rgb(252, 252, 252));
 
             GridLayout.LayoutParams params = new GridLayout.LayoutParams();
             params.width = buttonSize;
             params.height = buttonSize;
-
-            //숫자 위치 설정
             params.rowSpec = GridLayout.spec((i - 1) / 3);
             params.columnSpec = GridLayout.spec((i - 1) % 3);
 
             numberButton.setLayoutParams(params);
             numberButton.setOnClickListener(v -> {
                 if (selectedCell != null) {
-                    selectedCell.setValue(number);  //셀 선택 후 값 입력
+                    selectedCell.setValue(number);
                 }
             });
 
             numberPad.addView(numberButton);
         }
 
-        //지우기 버튼
-        Button clearButton = new Button(this);
+        android.widget.Button clearButton = new android.widget.Button(this);
         clearButton.setText("X");
-        clearButton.setBackgroundColor(Color.rgb(252,252,252));
+        clearButton.setBackgroundColor(Color.rgb(252, 252, 252));
 
         GridLayout.LayoutParams deleteParams = new GridLayout.LayoutParams();
         deleteParams.width = buttonSize;
         deleteParams.height = buttonSize;
 
-        //지우기 버튼 위치 설정
         deleteParams.rowSpec = GridLayout.spec(0);
         deleteParams.columnSpec = GridLayout.spec(3);
         clearButton.setLayoutParams(deleteParams);
 
         clearButton.setOnClickListener(v -> {
             if (selectedCell != null) {
-                selectedCell.setValue(0); //선택된 셀 초기화
+                selectedCell.setValue(0);
             }
         });
 
         numberPad.addView(clearButton);
 
-        //숫자패드의 빈 공간
-        for (int i = 0; i < 2; i++) {
-            View emptySpace = new View(this);
+        return numberPad;
+    }
 
-            GridLayout.LayoutParams emptyParams = new GridLayout.LayoutParams();
-            emptyParams.width = buttonSize;
-            emptyParams.height = buttonSize;
-
-            //빈 공간 위치 설정
-            emptyParams.rowSpec = GridLayout.spec(2);
-            emptyParams.columnSpec = GridLayout.spec(2 + i);
-            emptySpace.setLayoutParams(emptyParams);
-
-            numberPad.addView(emptySpace);
+    private void startTimer() {
+        if (countDownTimer != null) {
+            countDownTimer.cancel();
         }
 
-        return numberPad;
+        countDownTimer = new CountDownTimer(Long.MAX_VALUE, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                timeElapsed++;
+                updateTimer();
+            }
+
+            @Override
+            public void onFinish() {
+                Toast.makeText(MainActivity.this, "Time's up! Game over.", Toast.LENGTH_SHORT).show();
+            }
+        }.start();
+    }
+
+    private void updateTimer() {
+        int minutes = (int) (timeElapsed / 60);
+        int seconds = (int) (timeElapsed % 60);
+        timerTextView.setText(String.format("%02d:%02d", minutes, seconds));
     }
 }

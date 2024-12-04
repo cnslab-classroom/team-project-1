@@ -31,7 +31,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp" />
 
-    <!-- 기존에 있던 스도쿠 보드 (이곳에 대한 수정은 필요 없음) -->
+    <!-- 기존에 있던 스도쿠 보드 (기존의 게임 보드 UI를 위해 수정된 부분) -->
     <GridLayout
         android:id="@+id/sudokuGrid"
         android:layout_width="wrap_content"
@@ -40,6 +40,9 @@
         app:layout_constraintTop_toBottomOf="@id/finishButton"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-    
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="16dp"
+        android:columnCount="9"
+        android:rowCount="9" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
