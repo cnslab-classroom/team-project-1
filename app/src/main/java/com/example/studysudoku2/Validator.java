@@ -9,7 +9,7 @@ public class Validator{
         this.board = board;
     }
 
-    //특정 좌표에 n이 유효한지 확인
+    //특정 좌표에 숫자 n이 유효한지 확인
     public boolean isPossible(int x, int y, int n){
         // Row and Column Check
         for (int i = 0; i < 9; i++) {
