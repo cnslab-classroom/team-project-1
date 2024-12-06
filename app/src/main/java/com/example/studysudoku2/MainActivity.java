@@ -14,51 +14,14 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    private class Cell {
-        private int value;
-        private boolean fixed;
-        private android.widget.Button button;
-
-        public Cell(int intvalue, Context context) {
-            value = intvalue;
-            fixed = value != 0;
-
-            button = new android.widget.Button(context);
-            if (fixed) {
-                button.setText(String.valueOf(value));
-                button.setEnabled(false);
-                button.setBackgroundColor(Color.WHITE);
-                button.setTextColor(Color.rgb(78, 89, 104));
-            } else {
-                button.setText("");
-                button.setBackgroundColor(Color.WHITE);
-                button.setTextColor(Color.rgb(27, 100, 218));
-                button.setStateListAnimator(null);
-            }
-
-            button.setOnClickListener(view -> {
-                if (fixed) return;
-                if (selectedCell != null && selectedCell != this) {
-                    selectedCell.button.setBackgroundColor(Color.WHITE);
-                }
-                selectedCell = this;
-                button.setBackgroundColor(Color.rgb(192, 217, 254));
-            });
-        }
-
-        public void setValue(int newValue) {
-            value = newValue;
-            button.setText(value == 0 ? "" : String.valueOf(value));
-        }
-    }
-
     private Toolbar headerLayout;
-    private Cell selectedCell = null;
-    private Cell[][] table;
-    private String input;
-    private TextView timerTextView;
-    private CountDownTimer countDownTimer;
-    private long timeElapsed = 0;
+    private Cell selectedCell = null; //최근 선택된 셀
+    private Cell[][] table; //게임보드
+    private String input; //최초 게임보드
+    private TextView timerTextView; //타이머
+    private CountDownTimer countDownTimer; //카운트다운
+    private long timeElapsed = 0; //경과 시간
+    private Validator sudokuValidator; //유효성 검사
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,10 +68,15 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(mainLayout);
 
+        // Initialize Validator
+        int[][] board = initializeBoardFromInput();
+        sudokuValidator = new Validator(board);
+
         // Start Timer
         startTimer();
     }
 
+    //헤더 레이아웃
     private Toolbar createHeader(String title) {
         Toolbar toolbar = new Toolbar(this);
         toolbar.setTitle(title);
@@ -117,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
         return toolbar;
     }
 
+    //게임보드 레이아웃
     private LinearLayout createGameBoard() {
         LinearLayout gameBoardLayout = new LinearLayout(this);
 
@@ -128,24 +97,24 @@ public class MainActivity extends AppCompatActivity {
         int screenWidth = getResources().getDisplayMetrics().widthPixels;
         int cellSize = screenWidth / 9;
 
-        input = "3 8 ? 7 5 4 2 1 9 " +
+        input = "3 8 ? 7 5 ? ? 1 9 " +
                 "7 ? 4 5 1 2 6 9 3 " +
-                "2 1 6 3 9 8 7 5 4 " +
-                "5 7 3 4 8 9 1 2 6 " +
+                "2 1 6 3 9 8 7 ? 4 " +
+                "5 7 3 ? 8 ? 1 2 6 " +
                 "9 4 1 2 ? 6 5 ? 8 " +
                 "? 6 2 1 5 3 9 4 7 " +
                 "? ? 8 9 2 5 4 7 1 " +
                 "1 5 9 8 4 7 ? 6 2 " +
-                "4 2 7 6 3 1 8 9 5 ";
+                "4 2 ? 6 3 1 8 9 5 ";
 
         String[] split = input.split(" ");
         table = new Cell[9][9];
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
+        for (int i = 0; i < 9; i++){
+            for (int j = 0; j < 9; j++){
                 String s = split[i * 9 + j];
                 char c = s.charAt(0);
 
-                table[i][j] = new Cell(c == '?' ? 0 : c - '0', this);
+                table[i][j] = new Cell(c == '?' ? 0 : c - '0', this, i, j);
                 GridLayout.LayoutParams params = new GridLayout.LayoutParams();
                 params.width = cellSize;
                 params.height = cellSize;
@@ -160,14 +129,15 @@ public class MainActivity extends AppCompatActivity {
         return gameBoardLayout;
     }
 
-    private GridLayout createNumberPad() {
+    //숫자패드 레이아웃
+    private GridLayout createNumberPad(){
         GridLayout numberPad = new GridLayout(this);
         numberPad.setColumnCount(4);
         numberPad.setRowCount(3);
 
         int buttonSize = getResources().getDisplayMetrics().widthPixels / 4;
 
-        for (int i = 1; i <= 9; i++) {
+        for (int i = 1; i <= 9; i++){
             final int number = i;
             android.widget.Button numberButton = new android.widget.Button(this);
             numberButton.setText(String.valueOf(number));
@@ -202,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
         clearButton.setLayoutParams(deleteParams);
 
         clearButton.setOnClickListener(v -> {
-            if (selectedCell != null) {
+            if (selectedCell != null){
                 selectedCell.setValue(0);
             }
         });
@@ -212,28 +182,91 @@ public class MainActivity extends AppCompatActivity {
         return numberPad;
     }
 
-    private void startTimer() {
+    //타이머 기능
+    private void startTimer(){
         if (countDownTimer != null) {
             countDownTimer.cancel();
         }
 
-        countDownTimer = new CountDownTimer(Long.MAX_VALUE, 1000) {
+        countDownTimer = new CountDownTimer(Long.MAX_VALUE, 1000){
             @Override
-            public void onTick(long millisUntilFinished) {
+            public void onTick(long millisUntilFinished){
                 timeElapsed++;
                 updateTimer();
             }
 
             @Override
-            public void onFinish() {
+            public void onFinish(){
                 Toast.makeText(MainActivity.this, "Time's up! Game over.", Toast.LENGTH_SHORT).show();
             }
         }.start();
     }
 
-    private void updateTimer() {
+    private void updateTimer(){
         int minutes = (int) (timeElapsed / 60);
         int seconds = (int) (timeElapsed % 60);
         timerTextView.setText(String.format("%02d:%02d", minutes, seconds));
+    }
+
+    private int[][] initializeBoardFromInput(){
+        int[][] board = new int[9][9];
+        String[] split = input.split(" ");
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                char c = split[i * 9 + j].charAt(0);
+                board[i][j] = (c == '?') ? 0 : (c - '0');
+            }
+        }
+        return board;
+    }
+
+    private class Cell{
+        private int value;
+        private boolean fixed;
+        private android.widget.Button button;
+        private int row;
+        private int col;
+
+        public Cell(int intvalue, Context context, int row, int col){
+            value = intvalue;
+            fixed = value != 0;
+            this.row = row;
+            this.col = col;
+
+            button = new android.widget.Button(context);
+            if (fixed){
+                button.setText(String.valueOf(value));
+                button.setEnabled(false);
+                button.setBackgroundColor(Color.WHITE);
+                button.setTextColor(Color.rgb(78, 89, 104));
+            }
+            else{
+                button.setText("");
+                button.setBackgroundColor(Color.WHITE);
+                button.setTextColor(Color.rgb(27, 100, 218));
+                button.setStateListAnimator(null);
+            }
+
+            button.setOnClickListener(view -> {
+                if (fixed) return;
+
+                if (selectedCell != null && selectedCell != this){
+                    selectedCell.button.setBackgroundColor(Color.WHITE);
+                }
+                selectedCell = this;
+                button.setBackgroundColor(Color.rgb(192, 217, 254));
+            });
+        }
+
+        public void setValue(int newValue){
+            if (!sudokuValidator.isPossible(row, col, newValue)){
+                Toast.makeText(MainActivity.this, "Invalid move!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            value = newValue;
+            button.setText(value == 0 ? "" : String.valueOf(value));
+            sudokuValidator.updateBoard(row, col, newValue);
+        }
     }
 }
